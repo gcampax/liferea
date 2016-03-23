@@ -21,7 +21,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <libsoup/soup.h>
 #include <webkit2/webkit2.h>
 #include <string.h>
 
@@ -31,12 +30,11 @@
 #include "ui/browser_tabs.h"
 #include "ui/liferea_htmlview.h"
 
-#define LIFEREA_WEB_EXTENSION_OBJECT_PATH "/net/sf/liferea/WebExtension"
-#define LIFEREA_WEB_EXTENSION_BUS_NAME "net.sf.liferea.WebExtension"
-#define LIFEREA_WEB_EXTENSION_INTERFACE_NAME "net.sf.liferea.WebExtension"
+#include "web_extension/liferea_web_extension_names.h"
 
 static WebKitSettings *settings = NULL;
 static GDBusConnection *dbus_connection = NULL;
+static GList *dbus_connections = NULL;
 static GDBusServer *dbus_server = NULL;
 
 /**
@@ -136,6 +134,30 @@ liferea_webkit_authorize_authenticated_peer (GDBusAuthObserver 	*observer,
 	return authorized;
 }
 
+static void
+liferea_webkit_on_dbus_connection_close (GDBusConnection *connection,
+					 gboolean        remote_peer_vanished,
+					 GError          *error,
+					 gpointer        user_data)
+{
+	if (!remote_peer_vanished && error)
+	{
+		g_warning ("DBus connection closed with error : %s", error->message);
+	}
+	dbus_connections = g_list_remove (dbus_connections, connection);
+	g_object_unref (connection);
+}
+
+static void
+liferea_webkit_page_created (GDBusConnection *connection,
+			     const gchar *sender_name,
+			     const gchar *object_path,
+			     const gchar *interface_name,
+			     const gchar *signal_name,
+			     GVariant *parameters,
+			     gpointer user_data)
+{
+}
 
 static gboolean
 liferea_webkit_on_new_dbus_connection (GDBusServer *server, GDBusConnection *connection, gpointer user_data)
@@ -146,6 +168,24 @@ liferea_webkit_on_new_dbus_connection (GDBusServer *server, GDBusConnection *con
 		g_object_unref (dbus_connection);
 	}
 	dbus_connection = g_object_ref (connection);
+	dbus_connections = g_list_append (dbus_connections, dbus_connection);
+	g_signal_connect (dbus_connection,
+			  "closed",
+			  G_CALLBACK (liferea_webkit_on_dbus_connection_close),
+			  NULL);
+
+	g_dbus_connection_signal_subscribe (
+		connection,
+		NULL,
+		LIFEREA_WEB_EXTENSION_INTERFACE_NAME,
+		"PageCreated",
+		LIFEREA_WEB_EXTENSION_OBJECT_PATH,
+		NULL,
+		G_DBUS_SIGNAL_FLAGS_NONE,
+		(GDBusSignalCallback)liferea_webkit_page_created,
+                connection,
+                NULL);
+
 	return TRUE;
 }
 

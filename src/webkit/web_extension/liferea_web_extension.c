@@ -3,12 +3,14 @@
 #include <webkitdom/WebKitDOMDOMWindowUnstable.h>
 
 #include "liferea_web_extension.h"
+#include "liferea_web_extension_names.h"
 
 struct _LifereaWebExtension {
 	GObject 		parent;
 
 	GDBusConnection 	*connection;
 	WebKitWebExtension 	*webkit_extension;
+	GArray 			*pending_pages_created;
 	gboolean 		initialized;
 };
 
@@ -25,6 +27,9 @@ static const char introspection_xml[] =
   "   <arg type='t' name='page_id' direction='in'/>"
   "   <arg type='b' name='has_selection' direction='out'/>"
   "  </method>"
+  "  <signal name='PageCreated'>"
+  "   <arg type='t' name='page_id' direction='out'/>"
+  "  </signal>"
   " </interface>"
   "</node>";
 
@@ -49,6 +54,7 @@ liferea_web_extension_init (LifereaWebExtension *self)
 {
 	self->webkit_extension = NULL;
 	self->connection = NULL;
+	self->pending_pages_created = NULL;
 	self->initialized = FALSE;
 }
 
@@ -165,6 +171,60 @@ static const GDBusInterfaceVTable interface_vtable = {
 };
 
 static void
+liferea_web_extension_emit_page_created (LifereaWebExtension *extension, guint64 page_id)
+{
+	g_dbus_connection_emit_signal (
+		extension->connection,
+		NULL,
+		LIFEREA_WEB_EXTENSION_OBJECT_PATH,
+		LIFEREA_WEB_EXTENSION_INTERFACE_NAME,
+		"PageCreated",
+		g_variant_new ("(t)", page_id),
+		NULL);
+}
+
+static void
+liferea_web_extension_queue_page_created (LifereaWebExtension *extension, guint64 page_id)
+{
+	if (!extension->pending_pages_created) {
+		extension->pending_pages_created = g_array_new (FALSE, FALSE, sizeof (guint64));
+	}
+
+	g_array_append_val (extension->pending_pages_created, page_id);
+}
+
+static void
+liferea_web_extension_emit_pending_pages_created (LifereaWebExtension *extension)
+{
+	guint i;
+
+	if (!extension->pending_pages_created)
+		return;
+
+	for (i = 0;i<extension->pending_pages_created->len;++i) {
+		guint64 page_id = g_array_index (extension->pending_pages_created, guint64, i);
+		liferea_web_extension_emit_page_created (extension, page_id);
+	}
+	g_array_free (extension->pending_pages_created, TRUE);
+	extension->pending_pages_created = NULL;
+}
+
+static void
+on_page_created (WebKitWebExtension *webkit_extension,
+		 WebKitWebPage      *web_page,
+		 gpointer            extension)
+{
+	guint64 page_id;
+
+	page_id = webkit_web_page_get_id (web_page);
+	if (LIFEREA_WEB_EXTENSION (extension)->connection) {
+		liferea_web_extension_emit_page_created (LIFEREA_WEB_EXTENSION (extension), page_id);
+	} else {
+		liferea_web_extension_queue_page_created (LIFEREA_WEB_EXTENSION (extension), page_id);
+	}
+}
+
+static void
 on_dbus_connection_created (GObject 		*source_object,
 			    GAsyncResult 	*result,
 			    gpointer	 	user_data)
@@ -185,7 +245,7 @@ on_dbus_connection_created (GObject 		*source_object,
 	}
 
 	registration_id = g_dbus_connection_register_object (connection,
-		"/net/sf/liferea/WebExtension",
+		LIFEREA_WEB_EXTENSION_OBJECT_PATH,
 		introspection_data->interfaces[0],
 		&interface_vtable,
 		extension,
@@ -201,6 +261,7 @@ on_dbus_connection_created (GObject 		*source_object,
 	}
 
 	extension->connection = connection;
+	liferea_web_extension_emit_pending_pages_created (extension);
 }
 
 static gpointer
@@ -227,6 +288,12 @@ liferea_web_extension_initialize (LifereaWebExtension 	*extension,
 
 	if (extension->initialized)
 		return;
+
+	g_signal_connect (
+		webkit_extension,
+		"page-created",
+		G_CALLBACK (on_page_created),
+		extension);
 
 	GDBusAuthObserver	*observer;
 
