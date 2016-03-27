@@ -40,7 +40,6 @@ static GSettings *settings;
 static GSettings *desktop_settings;
 
 /* Function prototypes */
-static void conf_proxy_reset_settings_cb(GSettings *settings, guint cnxn_id, gchar *key, gpointer user_data);
 static void conf_toolbar_style_settings_cb(GSettings *settings, guint cnxn_id, gchar *key, gpointer user_data);
 
 static void
@@ -91,46 +90,6 @@ conf_init (void)
 		G_CALLBACK (conf_toolbar_style_settings_cb),
 		NULL
 	);
-
-	g_signal_connect (
-		settings,
-		"changed::" PROXY_DETECT_MODE,
-		G_CALLBACK (conf_proxy_reset_settings_cb),
-		NULL
-	);
-	g_signal_connect (
-		settings,
-		"changed::" PROXY_HOST,
-		G_CALLBACK (conf_proxy_reset_settings_cb),
-		NULL
-	);
-	g_signal_connect (
-		settings,
-		"changed::" PROXY_PORT,
-		G_CALLBACK (conf_proxy_reset_settings_cb),
-		NULL
-	);
-	g_signal_connect (
-		settings,
-		"changed::" PROXY_USEAUTH,
-		G_CALLBACK (conf_proxy_reset_settings_cb),
-		NULL
-	);
-	g_signal_connect (
-		settings,
-		"changed::" PROXY_USER,
-		G_CALLBACK (conf_proxy_reset_settings_cb),
-		NULL
-	);
-	g_signal_connect (
-		settings,
-		"changed::" PROXY_PASSWD,
-		G_CALLBACK (conf_proxy_reset_settings_cb),
-		NULL
-	);
-
-	/* Load settings into static buffers */
-	conf_proxy_reset_settings_cb (NULL, 0, NULL, NULL);
 }
 
 void
@@ -152,52 +111,6 @@ conf_toolbar_style_settings_cb (GSettings *settings,
 		liferea_shell_set_toolbar_style (style);
 		g_free (style);
 	}
-}
-
-static void
-conf_proxy_reset_settings_cb (GSettings *settings,
-                              guint cnxn_id,
-                              gchar *key,
-                              gpointer user_data)
-{
-	gchar		*proxyname, *proxyusername, *proxypassword;
-	gint		proxyport;
-	gint		proxydetectmode;
-	gboolean	proxyuseauth;
-
-	proxyname = NULL;
-	proxyport = 0;
-	proxyusername = NULL;
-	proxypassword = NULL;
-
-	conf_get_int_value (PROXY_DETECT_MODE, &proxydetectmode);
-	switch (proxydetectmode) {
-		default:
-		case 0:
-			debug0 (DEBUG_CONF, "proxy auto detect is configured");
-			/* nothing to do, all done by libproxy inside libsoup */
-			break;
-		case 1:
-			debug0 (DEBUG_CONF, "proxy is disabled by user");
-			/* nothing to do */
-			break;
-		case 2:
-			debug0 (DEBUG_CONF, "manual proxy is configured");
-
-			conf_get_str_value (PROXY_HOST, &proxyname);
-			conf_get_int_value (PROXY_PORT, &proxyport);
-			conf_get_bool_value (PROXY_USEAUTH, &proxyuseauth);
-			if (proxyuseauth) {
-				conf_get_str_value (PROXY_USER, &proxyusername);
-				conf_get_str_value (PROXY_PASSWD, &proxypassword);
-			}
-			break;
-	}
-	debug4 (DEBUG_CONF, "Manual proxy settings are now %s:%d %s:%s", proxyname != NULL ? proxyname : "NULL", proxyport,
-		  proxyusername != NULL ? proxyusername : "NULL",
-		  proxypassword != NULL ? proxypassword : "NULL");
-
-	network_set_proxy (proxyname, proxyport, proxyusername, proxypassword);
 }
 
 /*----------------------------------------------------------------------*/
