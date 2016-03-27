@@ -77,7 +77,6 @@ void on_disablejavascript_toggled (GtkToggleButton *togglebutton, gpointer user_
 void on_enableplugins_toggled (GtkToggleButton *togglebutton, gpointer user_data);
 void on_itemCountBtn_value_changed (GtkSpinButton *spinbutton, gpointer user_data);
 void on_default_update_interval_value_changed (GtkSpinButton *spinbutton, gpointer user_data);
-void on_useProxyAuth_toggled (GtkToggleButton *button, gpointer user_data);
 void on_enc_action_change_btn_clicked (GtkButton *button, gpointer user_data);
 void on_enc_action_remove_btn_clicked (GtkButton *button, gpointer user_data);
 void on_newcountintraybtn_clicked (GtkButton *button, gpointer user_data);
