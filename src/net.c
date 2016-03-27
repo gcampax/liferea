@@ -36,11 +36,6 @@
 
 static SoupSession *session = NULL;
 
-static gchar	*proxyname = NULL;
-static gchar	*proxyusername = NULL;
-static gchar	*proxypassword = NULL;
-static int	proxyport = 0;
-
 static void
 network_process_callback (SoupSession *session, SoupMessage *msg, gpointer user_data)
 {
@@ -85,24 +80,6 @@ network_process_callback (SoupSession *session, SoupMessage *msg, gpointer user_
 	}    
 
 	update_process_finished_job (job);
-}
-
-static SoupURI *
-network_get_proxy_uri (void)
-{
-	SoupURI *uri = NULL;
-	
-	if (!proxyname)
-		return uri;
-		
-	uri = soup_uri_new (NULL);
-	soup_uri_set_scheme (uri, SOUP_URI_SCHEME_HTTP);
-	soup_uri_set_host (uri, proxyname);
-	soup_uri_set_port (uri, proxyport);
-	soup_uri_set_user (uri, proxyusername);
-	soup_uri_set_password (uri, proxypassword);
-
-	return uri;
 }
 
 /* Downloads a feed specified in the request structure, returns 
@@ -196,31 +173,12 @@ network_process_request (const updateJobPtr const job)
 	 * msg to a callback in case of 401 (see soup_message_add_status_code_handler())
 	 * displaying the dialog ourselves, and requeing the msg if we get credentials */
 
-	/* If the feed has "dont use a proxy" selected, disable the proxy for the msg */
-	if (job->request->options && job->request->options->dontUseProxy)
-		soup_message_disable_feature (msg, SOUP_TYPE_PROXY_URI_RESOLVER);
-
 	/* Add Do Not Track header according to settings */
 	conf_get_bool_value (DO_NOT_TRACK, &do_not_track);
 	if (do_not_track)
 		soup_message_headers_append (msg->request_headers, "DNT", "1");
 
 	soup_session_queue_message (session, msg, network_process_callback, job);
-}
-
-static void
-network_authenticate (
-	SoupSession *session,
-	SoupMessage *msg,
-        SoupAuth *auth,
-	gboolean retrying,
-	gpointer data)
-{
-	if (!retrying && msg->status_code == SOUP_STATUS_PROXY_UNAUTHORIZED) {
-		soup_auth_authenticate (auth, g_strdup (proxyusername), g_strdup (proxypassword));
-	}
-	
-	// FIXME: Handle HTTP 401 too
 }
 
 void
@@ -230,7 +188,6 @@ network_init (void)
 	SoupCookieJar	*cookies;
 	gchar		*filename;
 	SoupLogger	*logger;
-	SoupURI		*proxy;
 
 	/* Set an appropriate user agent */
 	if (g_getenv ("LANG")) {
@@ -247,7 +204,6 @@ network_init (void)
 	g_free (filename);
 
 	/* Initialize libsoup */
-	proxy = network_get_proxy_uri ();
 	session = soup_session_async_new_with_options (SOUP_SESSION_USER_AGENT, useragent,
 						       SOUP_SESSION_TIMEOUT, 120,
 						       SOUP_SESSION_IDLE_TIMEOUT, 30,
@@ -255,19 +211,9 @@ network_init (void)
 	                                               SOUP_SESSION_ADD_FEATURE_BY_TYPE, SOUP_TYPE_CONTENT_DECODER,
 						       NULL);
 
-	if (proxy) {
-		debug1 (DEBUG_NET, "Initializing libsoup with proxy '%s'", proxy);
-		g_object_set (G_OBJECT (session),
-			      SOUP_SESSION_PROXY_URI, proxy,
-			      NULL);
-		soup_uri_free (proxy);
-	} else {
-		debug0 (DEBUG_NET, "Initializing libsoup with libproxy defaults");
-		soup_session_add_feature_by_type (session, SOUP_TYPE_PROXY_RESOLVER_DEFAULT);
-	}
+	debug0 (DEBUG_NET, "Initializing libsoup with libproxy defaults");
+	soup_session_add_feature_by_type (session, SOUP_TYPE_PROXY_RESOLVER_DEFAULT);
 		
-	g_signal_connect (session, "authenticate", G_CALLBACK (network_authenticate), NULL);
-
 	/* Soup debugging */
 	if (debug_level & DEBUG_NET) {
 		logger = soup_logger_new (SOUP_LOGGER_LOG_HEADERS, -1);
@@ -280,65 +226,6 @@ network_init (void)
 void 
 network_deinit (void)
 {
-	g_free (proxyname);
-	g_free (proxyusername);
-	g_free (proxypassword);
-}
-
-const gchar *
-network_get_proxy_host (void)
-{
-	return proxyname;
-}
-
-guint
-network_get_proxy_port (void)
-{
-	return proxyport;
-}
-
-const gchar *
-network_get_proxy_username (void)
-{
-	return proxyusername;
-}
-
-const gchar *
-network_get_proxy_password (void)
-{
-	return proxypassword;
-}
-
-extern void network_monitor_proxy_changed (void);
-
-void
-network_set_proxy (gchar *host, guint port, gchar *user, gchar *password)
-{
-	/* FIXME: make arguments const and use the SoupURI in network_get_proxy_* ? */
-	g_free (proxyname);
-	g_free (proxyusername);
-	g_free (proxypassword);
-	proxyname = host;
-	proxyport = port;
-	proxyusername = user;
-	proxypassword = password;
-
-	/* The sessions will be NULL if we were called from conf_init() as that's called
-	 * before net_init() */
-	if (session) {
-		SoupURI *newproxy = network_get_proxy_uri ();
-		
-		g_object_set (G_OBJECT (session),
-			      SOUP_SESSION_PROXY_URI, newproxy,
-			      NULL);
-
-		if (newproxy)
-			soup_uri_free (newproxy);
-	}
-
-	debug4 (DEBUG_NET, "proxy set to http://%s:%s@%s:%d", user, password, host, port);
-	
-	network_monitor_proxy_changed ();
 }
 
 const char *

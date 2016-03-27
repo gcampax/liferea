@@ -37,7 +37,6 @@ G_DEFINE_TYPE (NetworkMonitor, network_monitor, G_TYPE_OBJECT)
 
 enum {
 	ONLINE_STATUS_CHANGED,
-	PROXY_CHANGED,
 	LAST_SIGNAL
 };
 
@@ -85,17 +84,6 @@ network_monitor_class_init (NetworkMonitorClass *klass)
 		1,
 		G_TYPE_BOOLEAN);
 		
-	network_monitor_signals [PROXY_CHANGED] = 
-		g_signal_new ("proxy-changed",
-		G_OBJECT_CLASS_TYPE (object_class),
-		(GSignalFlags)(G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION),
-		0, 
-		NULL,
-		NULL,
-		g_cclosure_marshal_VOID__VOID,
-		G_TYPE_NONE,
-		0);
-
 	g_type_class_add_private (object_class, sizeof (NetworkMonitorPrivate));
 }
 
@@ -149,15 +137,6 @@ network_monitor_is_online (void)
 		return FALSE;
 
 	return network_monitor->priv->online;
-}
-
-void
-network_monitor_proxy_changed (void)
-{
-	if (!network_monitor)
-		return;
-
-	g_signal_emit (network_monitor, network_monitor_signals[PROXY_CHANGED], 0, NULL);
 }
 
 static void

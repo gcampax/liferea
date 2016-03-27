@@ -38,46 +38,6 @@ void network_init (void);
 void network_deinit (void);
 
 /**
- * Configures the network client to use the given proxy
- * settings. If the host name is NULL then no proxy will
- * be used.
- *
- * @param host		the new proxy host
- * @param port		the new proxy port
- * @param user		the new proxy username or NULL
- * @param password	the new proxy password or NULL
- */
-void network_set_proxy (gchar *host, guint port, gchar *user, gchar *password);
-
-/**
- * Returns the currently configured proxy host.
- *
- * @returns the proxy host
- */
-const gchar * network_get_proxy_host (void);
-
-/**
- * Returns the currently configured proxy port.
- *
- * @returns the proxy port
- */
-guint network_get_proxy_port (void);
-
-/**
- * Returns the currently configured proxy user name 
- *
- * @returns the proxy user name (or NULL)
- */
-const gchar * network_get_proxy_username (void);
-
-/**
- * Returns the currently configured proxy password.
- *
- * @returns the proxy password (or NULL)
- */
-const gchar * network_get_proxy_password (void);
-
-/**
  * Process the given update job.
  *
  * @param request	the update request

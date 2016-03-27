@@ -263,17 +263,6 @@ liferea_htmlview_online_status_changed (NetworkMonitor *nm, gboolean online, gpo
 	liferea_htmlview_set_online (htmlview, online);
 }
 
-static void
-liferea_htmlview_proxy_changed (NetworkMonitor *nm, gpointer userdata)
-{
-	LifereaHtmlView *htmlview = LIFEREA_HTMLVIEW (userdata);
-
-	(RENDERER (htmlview)->setProxy) (network_get_proxy_host (),
-	                                 network_get_proxy_port (),
-	                                 network_get_proxy_username (),
-	                                 network_get_proxy_password ());
-}
-
 void
 liferea_htmlview_set_headline_view (LifereaHtmlView *htmlview)
 {
@@ -293,14 +282,6 @@ liferea_htmlview_new (gboolean forceInternalBrowsing)
 	g_signal_connect (network_monitor_get (), "online-status-changed",
 	                  G_CALLBACK (liferea_htmlview_online_status_changed),
 	                  htmlview);
-	g_signal_connect (network_monitor_get (), "proxy-changed",
-	                  G_CALLBACK (liferea_htmlview_proxy_changed),
-	                  htmlview);
-
-	if (NULL != network_get_proxy_host ()) {
-		debug0 (DEBUG_NET, "Setting initial HTML widget proxy...");
-		liferea_htmlview_proxy_changed (network_monitor_get (), htmlview);
-	}
 	
 	return htmlview;
 }

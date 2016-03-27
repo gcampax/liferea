@@ -72,9 +72,4 @@ void network_monitor_set_online (gboolean mode);
  */
 gboolean network_monitor_is_online (void);
 
-/**
- * Called by networking when proxy was changed.
- */
-void network_monitor_proxy_changed (void);
-
 #endif
