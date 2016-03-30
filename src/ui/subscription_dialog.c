@@ -242,11 +242,6 @@ on_propdialog_response (GtkDialog *dialog,
 		else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(liferea_dialog_lookup(GTK_WIDGET(dialog), "feedCacheLimited"))))
 			feed->cacheLimit = gtk_spin_button_get_value(GTK_SPIN_BUTTON(liferea_dialog_lookup(GTK_WIDGET(dialog), "cacheItemLimit")));
 
-		if (SUBSCRIPTION_TYPE(subscription) == feed_get_subscription_type ()) {
-			/* "Download" Options */
-			subscription->updateOptions->dontUseProxy = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(liferea_dialog_lookup(GTK_WIDGET(dialog), "dontUseProxyCheck")));
-		}
-
 		/* "Advanced" options */
 		feed->encAutoDownload = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (liferea_dialog_lookup (GTK_WIDGET (dialog), "enclosureDownloadCheck")));
 		node->loadItemLink = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (liferea_dialog_lookup (GTK_WIDGET (dialog), "loadItemLinkCheck")));
@@ -494,9 +489,6 @@ subscription_prop_dialog_load (SubscriptionPropDialog *spd,
 
 	on_feed_prop_filtercheck(GTK_TOGGLE_BUTTON(liferea_dialog_lookup(spd->priv->dialog, "filterCheckbox")), spd->priv);
 	
-	/* Download */
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(liferea_dialog_lookup(spd->priv->dialog, "dontUseProxyCheck")), subscription->updateOptions->dontUseProxy);
-
 	/* Advanced */	
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (liferea_dialog_lookup (spd->priv->dialog, "enclosureDownloadCheck")), feed->encAutoDownload);
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (liferea_dialog_lookup (spd->priv->dialog, "loadItemLinkCheck")), node->loadItemLink);
@@ -615,7 +607,6 @@ on_newdialog_response (GtkDialog *dialog, gint response_id, gpointer user_data)
 		} 
 		
 		options = g_new0 (struct updateOptions, 1);
-		options->dontUseProxy = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (liferea_dialog_lookup(GTK_WIDGET (dialog), "dontUseProxyCheck")));
 		
 		feedlist_add_subscription (source, filter, options,
 					   FEED_REQ_PRIORITY_HIGH);

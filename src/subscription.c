@@ -499,12 +499,6 @@ subscription_import (xmlNodePtr xml, gboolean trusted)
 		subscription_set_update_interval (subscription, common_parse_long (intervalStr, -1));
 		xmlFree (intervalStr);
 	
-		/* no proxy flag */
-		tmp = xmlGetProp (xml, BAD_CAST "dontUseProxy");
-		if (tmp && !xmlStrcmp (tmp, BAD_CAST "true"))
-			subscription->updateOptions->dontUseProxy = TRUE;
-		xmlFree (tmp);
-	
 		/* authentication options */
 		subscription->updateOptions->username = xmlGetProp (xml, BAD_CAST "username");
 		subscription->updateOptions->password = xmlGetProp (xml, BAD_CAST "password");
@@ -531,9 +525,6 @@ subscription_export (subscriptionPtr subscription, xmlNodePtr xml, gboolean trus
 	if(trusted) {
 		xmlNewProp (xml, BAD_CAST"updateInterval", BAD_CAST interval);
 
-		if (subscription->updateOptions->dontUseProxy)
-			xmlNewProp (xml, BAD_CAST"dontUseProxy", BAD_CAST"true");
-		
 		if (!liferea_auth_has_active_store ()) {
 			if (subscription->updateOptions->username)
 				xmlNewProp (xml, BAD_CAST"username", subscription->updateOptions->username);

@@ -70,7 +70,6 @@ typedef void (*update_result_cb) (const struct updateResult * const result, gpoi
 typedef struct updateOptions {
 	gchar		*username;	/**< username for HTTP auth */
 	gchar		*password;	/**< password for HTTP auth */
-	gboolean	dontUseProxy;	/**< no proxy flag */
 } *updateOptionsPtr;
 
 /** defines all state data an updatable object (e.g. a feed) needs */

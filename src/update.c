@@ -196,7 +196,6 @@ update_options_copy (updateOptionsPtr options)
 	newOptions = g_new0 (struct updateOptions, 1);
 	newOptions->username = g_strdup (options->username);
 	newOptions->password = g_strdup (options->password);
-	newOptions->dontUseProxy = options->dontUseProxy;
 	
 	return newOptions;
 }
