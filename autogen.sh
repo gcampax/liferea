@@ -18,9 +18,13 @@ if [ "$tmp" = "" ]; then
 	exit 1
 fi
 
+srcdir=`dirname $0`
+(cd $srcdir ;
 autoreconf -i
 intltoolize
+)
+
 if test -z "$NOCONFIGURE"; then
-./configure "$@"
+$srcdir/configure "$@"
 fi
 

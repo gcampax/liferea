@@ -1,0 +1,48 @@
+{
+    "id": "net.sourceforge.liferea",
+    "branch": "master",
+    "runtime": "org.gnome.Platform",
+    "runtime-version": "3.20",
+    "sdk": "org.gnome.Sdk",
+    "command": "liferea",
+    "rename-desktop-file": "liferea.desktop",
+    "rename-appdata-file": "liferea.appdata.xml",
+    "rename-icon": "liferea",
+    "finish-args": [
+        "--share=ipc", "--socket=x11",
+        "--socket=wayland",
+        "--share=network",
+        "--filesystem=xdg-run/dconf", "--filesystem=~/.config/dconf:ro",
+        "--talk-name=ca.desrt.dconf", "--env=DCONF_USER_CONFIG_DIR=.config/dconf"
+    ],
+    "build-options" : {
+        "cflags": "-O2 -g",
+        "cxxflags": "-O2 -g",
+        "env": {
+            "V": "1"
+        }
+    },
+    "cleanup": ["/include", "/lib/pkgconfig", "/share/pkgconfig", "/share/aclocal", "/man", "/share/man", "/share/gtk-doc", "/share/vala", "*.la", "*.a"],
+    "modules": [
+        {
+            "name": "libpeas",
+            "cleanup": [ "/bin/*", "/lib/peas-demo" ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "git://git.gnome.org/libpeas"
+                }
+            ]
+        },
+        {
+            "name": "liferea",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/gcampax/liferea.git",
+                    "branch": "master"
+                }
+            ]
+        }
+    ]
+}
