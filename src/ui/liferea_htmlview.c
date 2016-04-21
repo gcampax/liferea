@@ -200,8 +200,6 @@ liferea_htmlview_class_init (LifereaHtmlViewClass *klass)
 		1,
 		G_TYPE_STRING);
 
-	htmlview_get_impl ()->init ();
-
 	g_type_class_add_private (object_class, sizeof (LifereaHtmlViewPrivate));
 }
 
@@ -209,10 +207,17 @@ static void
 liferea_htmlview_init (LifereaHtmlView *htmlview)
 {
 	GtkWidget *widget, *image;
+	static gboolean htmlview_initialized;
 
 	htmlview->priv = LIFEREA_HTMLVIEW_GET_PRIVATE (htmlview);
 	htmlview->priv->internal = FALSE;
 	htmlview->priv->impl = htmlview_get_impl ();
+
+	if (!htmlview_initialized) {
+		htmlview->priv->impl->init ();
+		htmlview_initialized = TRUE;
+	}
+
 	htmlview->priv->renderWidget = RENDERER (htmlview)->create (htmlview);
 	htmlview->priv->container = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
 	htmlview->priv->history = browser_history_new ();
